@@ -1,18 +1,34 @@
+# utils.py
+
 import re
-import constants
 import os
 import requests
 import pandas as pd
 import multiprocessing
 import time
-from time import time as timer
 from tqdm import tqdm
 import numpy as np
 from pathlib import Path
-from functools import partial
-import requests
-import urllib
 from PIL import Image
+import constants
+from functools import partial
+
+def preprocess_text(text):
+    """Preprocess the given text by removing punctuation, converting to lowercase, and removing extra whitespace."""
+    if text is None:
+        return ""
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove punctuation and numbers
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    text = re.sub(r'\d+', '', text)      # Remove numbers
+    
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
 
 def common_mistake(unit):
     if unit in constants.allowed_units:
@@ -24,7 +40,7 @@ def common_mistake(unit):
     return unit
 
 def parse_string(s):
-    s_stripped = "" if s==None or str(s)=='nan' else s.strip()
+    s_stripped = "" if s is None or str(s) == 'nan' else s.strip()
     if s_stripped == "":
         return None, None
     pattern = re.compile(r'^-?\d+(\.\d+)?\s+[a-zA-Z\s]+$')
@@ -38,13 +54,12 @@ def parse_string(s):
             unit, s, constants.allowed_units))
     return number, unit
 
-
 def create_placeholder_image(image_save_path):
     try:
         placeholder_image = Image.new('RGB', (100, 100), color='black')
         placeholder_image.save(image_save_path)
     except Exception as e:
-        return
+        print(f"Error creating placeholder image: {e}")
 
 def download_image(image_link, save_folder, retries=3, delay=3):
     if not isinstance(image_link, str):
@@ -58,26 +73,62 @@ def download_image(image_link, save_folder, retries=3, delay=3):
 
     for _ in range(retries):
         try:
-            urllib.request.urlretrieve(image_link, image_save_path)
-            return
-        except:
+            response = requests.get(image_link)
+            if response.status_code == 200:
+                with open(image_save_path, 'wb') as f:
+                    f.write(response.content)
+                return
+            else:
+                print(f"Failed to download {image_link}: Status code {response.status_code}")
+        except Exception as e:
+            print(f"Error downloading {image_link}: {e}")
             time.sleep(delay)
     
-    create_placeholder_image(image_save_path) #Create a black placeholder image for invalid links/images
+    create_placeholder_image(image_save_path)  # Create a black placeholder image for invalid links/images
 
-def download_images(image_links, download_folder, allow_multiprocessing=True):
+def download_image_wrapper(image_link, download_folder):
+    """Wrapper function to download images."""
+    download_image(image_link, download_folder)
+
+def download_images(train_csv, test_csv, download_folder, allow_multiprocessing=True):
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
 
+    # Load image links from CSV files
+    train_data = pd.read_csv(train_csv)
+    test_data = pd.read_csv(test_csv)
+    
+    # Concatenate image links from train and test data
+    image_links = train_data['image_link'].tolist() + test_data['image_link'].tolist()
+    
     if allow_multiprocessing:
-        download_image_partial = partial(
-            download_image, save_folder=download_folder, retries=3, delay=3)
-
         with multiprocessing.Pool(64) as pool:
-            list(tqdm(pool.imap(download_image_partial, image_links), total=len(image_links)))
-            pool.close()
-            pool.join()
+            list(tqdm(pool.imap(partial(download_image_wrapper, download_folder=download_folder), image_links), total=len(image_links)))
     else:
         for image_link in tqdm(image_links, total=len(image_links)):
-            download_image(image_link, save_folder=download_folder, retries=3, delay=3)
+            download_image(image_link, download_folder)
+
+def extract_image_features(image_path):
+    """
+    Extract features from the image.
+    You can use pre-trained models or custom feature extraction techniques here.
+    """
+    if not os.path.exists(image_path):
+        print(f"Image not found: {image_path}")
+        return np.zeros((224 * 224 * 3,))  # Return a zero array if the image is missing
+
+    try:
+        image = Image.open(image_path)
+        # Resize the image to a fixed size
+        image = image.resize((224, 224))
         
+        # Convert the image to a numpy array
+        image_data = np.array(image)
+        
+        # Flatten the image data
+        image_features = image_data.flatten()
+        
+        return image_features
+    except Exception as e:
+        print(f"Error processing image {image_path}: {e}")
+        return np.zeros((224 * 224 * 3,))  # Return a zero array if there's an error
