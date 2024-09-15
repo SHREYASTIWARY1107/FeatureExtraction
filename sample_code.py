@@ -5,8 +5,7 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
-from utils import download_images, extract_image_features, preprocess_text
-
+from src.utils import download_images, extract_image_features, preprocess_text
 # Define paths
 DATASET_FOLDER = 'dataset/'  # Path to dataset folder
 TRAIN_FILENAME = 'train.csv'
