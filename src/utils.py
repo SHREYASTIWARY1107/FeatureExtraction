@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 from pathlib import Path
 from PIL import Image
-import constants  # Change this to from . import constants if constants.py is in the same directory
+import constants  # Absolute import
 from functools import partial
 
 def preprocess_text(text):

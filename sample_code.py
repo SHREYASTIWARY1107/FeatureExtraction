@@ -1,18 +1,18 @@
-# src/sample_code.py
+# sample_code.py
 
 import os
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
-from .utils import download_images, extract_image_features, preprocess_text  # Use relative import
-from .constants import allowed_units  # Use relative import
+from src.utils import download_images, extract_image_features, preprocess_text  # Absolute import
+from src.constants import allowed_units  # Absolute import
 
 # Define paths
-DATASET_FOLDER = '../dataset/'  # Path to dataset folder
+DATASET_FOLDER = 'dataset/'  # Path to dataset folder
 TRAIN_FILENAME = 'train.csv'
 TEST_FILENAME = 'test.csv'
-IMAGE_SAVE_DIR = '../downloaded_images'  # Path to the downloaded images
+IMAGE_SAVE_DIR = 'downloaded_images'  # Path to the downloaded images
 
 if __name__ == "__main__":
     # Download images from train and test CSV files
