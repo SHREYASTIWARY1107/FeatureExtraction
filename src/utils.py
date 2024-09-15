@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 from pathlib import Path
 from PIL import Image
-import constants  # Absolute import
+from .constants import allowed_units  # Use relative import
 from functools import partial
 
 def preprocess_text(text):
@@ -31,11 +31,11 @@ def preprocess_text(text):
     return text
 
 def common_mistake(unit):
-    if unit in constants.allowed_units:
+    if unit in allowed_units:
         return unit
-    if unit.replace('ter', 'tre') in constants.allowed_units:
+    if unit.replace('ter', 'tre') in allowed_units:
         return unit.replace('ter', 'tre')
-    if unit.replace('feet', 'foot') in constants.allowed_units:
+    if unit.replace('feet', 'foot') in allowed_units:
         return unit.replace('feet', 'foot')
     return unit
 
@@ -49,9 +49,9 @@ def parse_string(s):
     parts = s_stripped.split(maxsplit=1)
     number = float(parts[0])
     unit = common_mistake(parts[1])
-    if unit not in constants.allowed_units:
+    if unit not in allowed_units:
         raise ValueError("Invalid unit [{}] found in {}. Allowed units: {}".format(
-            unit, s, constants.allowed_units))
+            unit, s, allowed_units))
     return number, unit
 
 def create_placeholder_image(image_save_path):
