@@ -1,2 +1,0 @@
-# FeatureExtraction
-Amazon ML 
